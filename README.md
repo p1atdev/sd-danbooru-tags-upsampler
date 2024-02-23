@@ -103,6 +103,13 @@ This extension uses the following model:
 
 - `p1atdev/dart-v1-sft`: [🤗 HuggingFace](https://huggingface.co/p1atdev/dart-v1-sft)
 
+## Want to use without sd webui?
+
+A demo on 🤗 Space is avaiable, so you can try upsampling tags without installing this extension:
+
+Demo: https://huggingface.co/spaces/p1atdev/danbooru-tags-transformer
+
+
 ## Acknowledgements
 
 This project has been influenced by the following projects and researches. We express our respect and gratitude to the developers and contributors of these projects:

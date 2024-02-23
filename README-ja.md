@@ -102,6 +102,12 @@ nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit,
 
 - `p1atdev/dart-v1-sft`: [🤗 HuggingFace](https://huggingface.co/p1atdev/dart-v1-sft)
 
+## Stable Diffusion WebUI なしで使いたいですか？
+
+🤗 Space 上にデモがあるのでインストール不要で試すことができます:
+
+デモ: https://huggingface.co/spaces/p1atdev/danbooru-tags-transformer
+
 ## 謝辞
 
 このプロジェクトは以下のプロジェクトや研究の影響を受けています。 これらのプロジェクトの開発者および貢献者に敬意と感謝の意を表します:
