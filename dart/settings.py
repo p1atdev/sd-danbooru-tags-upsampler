@@ -97,7 +97,7 @@ def on_ui_settings():
         key="default_ban_tags",
         info=shared.OptionInfo(
             default=DEFAULT_VALUES["default_ban_tags"],  # default value
-            label="The list of tags to prevent from appearing in tag upsamping.",
+            label="The default tags to prevent from appearing in tag upsamping.",
             component=gr.Textbox,
             section=section,
         ),

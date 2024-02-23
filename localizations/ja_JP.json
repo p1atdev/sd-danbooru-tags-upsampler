@@ -1,0 +1,22 @@
+{
+  "Danbooru Tags Upsampler": "Danbooru タグアップサンプラー",
+  "Total tag length": "タグの合計長",
+  "very short": "とても短い",
+  "short": "短い",
+  "long": "長い",
+  "very long": "とても長い",
+  "Ban tags": "禁止タグ",
+  "Seed for upsampling tags": "タグのアップサンプリング用シード値",
+  "Randomize": "ランダム化",
+  "Shuffle": "シャッフル",
+  "Upsampling timing": "アップサンプルのタイミング",
+  "Before applying style": "スタイルの適用前",
+  "After applying style": "スタイルの適用後",
+  "The model to use for upsampling danbooru tags.": "Danbooru タグのアップサンプルに利用するモデル",
+  "The tokenizer for the upsampling model.": "アップサンプルモデルで使うトークナイザー",
+  "The type of model backend.": "モデルのバックエンド",
+  "Original": "オリジナル",
+  "ONNX (Quantized)": "ONNX (量子化)",
+  "The default tags to prevent from appearing in tag upsamping.": "アップサンプル時に出現を防ぐタグのデフォルト値",
+  "The device to run upsampling model on.": "アップサンプルモデルを実行するデバイス"
+}
