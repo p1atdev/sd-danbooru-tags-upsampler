@@ -96,11 +96,11 @@ nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit,
 - Seed: `-1`
 - When to perform the process: `Before applying styles`
 
-##　モデルへのアクセス
+## モデルへのアクセス
 
 この拡張機能では次のモデルを使用しています:
 
-- `p1atdev/dart-v1-sft`: [🤗 HuggingFace](](https://huggingface.co/p1atdev/dart-v1-sft))
+- `p1atdev/dart-v1-sft`: [🤗 HuggingFace](https://huggingface.co/p1atdev/dart-v1-sft)
 
 ## 謝辞
 

@@ -101,7 +101,7 @@ Upsampling settings:
 
 This extension uses the following model:
 
-- `p1atdev/dart-v1-sft`: [🤗 HuggingFace](](https://huggingface.co/p1atdev/dart-v1-sft))
+- `p1atdev/dart-v1-sft`: [🤗 HuggingFace](https://huggingface.co/p1atdev/dart-v1-sft)
 
 ## Acknowledgements
 
