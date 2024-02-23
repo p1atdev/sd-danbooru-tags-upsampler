@@ -119,7 +119,7 @@ class DartUpsampleScript(scripts.Script):
 
                 with gr.Group():
                     process_timing_dropdown = gr.Dropdown(
-                        label="When to perform the process",
+                        label="Upsampling timing",
                         choices=list(PROCESSING_TIMING.values()),
                         value=PROCESSING_TIMING["BEFORE"],
                     )
