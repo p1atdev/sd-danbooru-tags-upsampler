@@ -4,7 +4,7 @@
 
 An extension for Stable Diffusion Web UI that upsamples prompts by generating or completing danbooru tags using lightweight LLM.
 
-It's useful for people who don't want think about long prompt or want to see diverse, natural and high quality images without any thinking.
+It's useful for people who don't want think about long prompt or want to see **diverse**, **natural** and **high quality** images without any thinking.
 
 ## Usage
 
@@ -97,7 +97,7 @@ Upsampling settings:
 - Seed: `-1`
 - When to perform the process: `Before applying styles`
 
-## Access to the model
+## Access to the model weights
 
 This extension uses the following model:
 
