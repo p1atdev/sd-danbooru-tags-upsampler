@@ -1,6 +1,6 @@
 # sd-danbooru-tags-upsampler
 
-日本語は[こちら](./README.ja.md)へ
+日本語は[こちら](./README-ja.md)へ
 
 An extension for Stable Diffusion Web UI that upsamples prompts by generating or completing danbooru tags using lightweight LLM.
 
