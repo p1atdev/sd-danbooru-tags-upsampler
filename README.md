@@ -10,7 +10,7 @@ It's useful for people who don't want think about long prompt or want to see **d
 
 <img src="./images/screenshot-1.jpg" width="540px" alt="Scrennshot of this extension" />
 
-Open the `Danbooru Tags Upsampler` accordion and check the `Enable` checkbox to enable this extension.
+Open the `Danbooru Tags Upsampler` accordion and check the `Enabled` checkbox to enable this extension.
 
 Explanation of parameters:
 

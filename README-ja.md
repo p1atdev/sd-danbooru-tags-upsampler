@@ -10,7 +10,7 @@ English version is [here](./README.md).
 
 <img src="./images/screenshot-1.jpg" width="540px" alt="拡張機能のスクリーンショット" />
 
-`Danbooru Tags Upsampler`　と書かれたアコーディオンを開き、`Enable` チェックボックスにチェックをいれることで拡張機能を有効化できます。
+`Danbooru Tags Upsampler`　と書かれたアコーディオンを開き、`Enabled` チェックボックスにチェックをいれることで拡張機能を有効化できます。
 
 パラメーターの説明:
 
