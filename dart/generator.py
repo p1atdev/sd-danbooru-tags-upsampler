@@ -61,6 +61,7 @@ class DartGenerator:
                     else None
                 ),
             )
+        logger.info(f"Dart model backend is {self.model_backend }")
 
         assert self.dart_model is not None
 
