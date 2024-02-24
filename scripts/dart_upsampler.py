@@ -60,6 +60,8 @@ class DartUpsampleScript(scripts.Script):
         super().__init__()
 
         self.options = parse_options(opts)
+        if self.options["debug_logging"]:
+            logger.setLevel(logging.DEBUG)
 
         self.generator = DartGenerator(
             self.options["model_name"],
@@ -71,9 +73,6 @@ class DartUpsampleScript(scripts.Script):
             self.generator.get_vocab_list(),
             self.generator.get_special_vocab_list(),
         )
-
-        if self.options["debug_logging"]:
-            logger.setLevel(logging.DEBUG)
 
         script_callbacks.on_ui_settings(on_ui_settings)
 
@@ -178,6 +177,7 @@ class DartUpsampleScript(scripts.Script):
             return
 
         analyzing_results = [self.analyzer.analyze(prompt) for prompt in p.all_prompts]
+        logger.debug(f"Analyzed: {analyzing_results}")
 
         upsampling_prompt = [
             self.generator.compose_prompt(
@@ -228,6 +228,7 @@ class DartUpsampleScript(scripts.Script):
             return
 
         analyzing_result = self.analyzer.analyze(p.prompt)
+        logger.debug(f"Analyzed: {analyzing_result}")
 
         upsampling_prompt = self.generator.compose_prompt(
             rating=f"{analyzing_result.rating_parent}, {analyzing_result.rating_child}",

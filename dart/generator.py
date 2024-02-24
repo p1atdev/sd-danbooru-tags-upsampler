@@ -15,6 +15,7 @@ from optimum.onnxruntime import ORTModelForCausalLM
 from modules.shared import opts
 
 from dart.settings import MODEL_BACKEND_TYPE, parse_options
+from dart.utils import escape_special_symbols
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -173,7 +174,9 @@ class DartGenerator:
         )
         logger.debug(f"Generated tags: {decoded}")
 
+        escaped = ", ".join(escape_special_symbols(decoded.split(", ")))
+
         end_time = time.time()
         logger.info(f"Upsampling tags has taken {end_time-start_time:.2f} seconds")
 
-        return decoded
+        return escaped

@@ -2,7 +2,15 @@ import logging
 from pathlib import Path
 from dataclasses import dataclass
 
-from modules.scripts import basedir
+from modules.shared import opts
+
+from dart.settings import parse_options
+from dart.utils import (
+    SPECIAL_SYMBOL_PATTERN,
+    ESCAPED_SYMBOL_PATTERNS,
+    escape_special_symbols,
+    unescape_special_symbols,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -156,9 +164,13 @@ class ImagePromptAnalyzingResult:
 
 
 class DartAnalyzer:
-    """A class for analyzing provided image prompt for composing umsaple prompt"""
+    """A class for analyzing provided prompt and composing prompt for upsampling"""
 
     def __init__(self, extension_dir: str, vocab: list[str], special_vocab: list[str]):
+        self.options = parse_options(opts)
+        if self.options["debug_logging"]:
+            logger.setLevel(logging.DEBUG)
+
         self.tags_dir = Path(extension_dir) / "tags"
 
         self.rating_tags = ALL_INPUT_RATING_TAGS
@@ -169,6 +181,12 @@ class DartAnalyzer:
 
         self.vocab = vocab
         self.special_vocab = special_vocab
+
+        if self.options["escape_input_brackets"]:
+            logger.debug("Allows tags with escaped brackets")
+            self.copyright_tags += escape_special_symbols(self.copyright_tags)
+            self.character_tags += escape_special_symbols(self.character_tags)
+            self.vocab += escape_special_symbols(self.vocab)
 
     def split_tags(self, image_prompt: str) -> list[str]:
         return [tag.strip() for tag in image_prompt.split(",") if tag.strip() != ""]
@@ -184,6 +202,15 @@ class DartAnalyzer:
                 not_matched.append(input_tag)
 
         return matched, not_matched
+
+    def preprocess_tags(self, tags: list[str]) -> str:
+        """Preprocess tags to pass to dart model."""
+
+        # \(\) -> ()
+        if self.options["escape_output_brackets"]:
+            tags = unescape_special_symbols(tags)
+
+        return ", ".join(tags)
 
     def analyze(self, image_prompt: str) -> ImagePromptAnalyzingResult:
         input_tags = self.split_tags(image_prompt)
@@ -206,9 +233,9 @@ class DartAnalyzer:
         return ImagePromptAnalyzingResult(
             rating_parent=rating_parent,
             rating_child=rating_child,
-            copyright=", ".join(copyright_tags),
-            character=", ".join(character_tags),
-            general=", ".join(other_tags),
-            quality=", ".join(quality_tags),
-            unknown=", ".join(unknown_tags),
+            copyright=self.preprocess_tags(copyright_tags),
+            character=self.preprocess_tags(character_tags),
+            general=self.preprocess_tags(other_tags),
+            quality=self.preprocess_tags(quality_tags),
+            unknown=self.preprocess_tags(unknown_tags),
         )
