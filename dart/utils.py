@@ -33,7 +33,8 @@ def get_upmsapling_seeds(
         subseed = get_random_seed()
 
     if custom_seed != -1:
-        all_subseeds = [int(custom_seed) + i for i in range(num_seeds)]
+        # if custom_seed is specified, use the same seeds for prompts
+        all_subseeds = [int(custom_seed)] * num_seeds
     else:
         all_subseeds = [subseed + i for i in range(num_seeds)]
 
