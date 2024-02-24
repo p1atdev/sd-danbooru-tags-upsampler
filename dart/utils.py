@@ -33,7 +33,7 @@ def get_upmsapling_seeds(
         subseed = get_random_seed()
 
     if custom_seed != -1:
-        all_subseeds = [custom_seed + i for i in range(num_seeds)]
+        all_subseeds = [int(custom_seed) + i for i in range(num_seeds)]
     else:
         all_subseeds = [subseed + i for i in range(num_seeds)]
 
