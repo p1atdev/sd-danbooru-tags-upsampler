@@ -65,7 +65,7 @@ class DartGenerator:
 
         assert self.dart_model is not None
 
-        self.dart_model.to(self.model_device)
+        self.dart_model.to(self.model_device)  # type: ignore
 
     def _load_dart_tokenizer(self):
         self.dart_tokenizer = AutoTokenizer.from_pretrained(
