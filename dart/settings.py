@@ -18,7 +18,6 @@ OPTION_NAME = Literal[
     "model_name",
     "tokenizer_name",
     "model_backend_type",
-    "default_ban_tags",
     "model_device",
 ]
 
@@ -26,7 +25,6 @@ DEFAULT_VALUES: dict[OPTION_NAME, Any] = {
     "model_name": "p1atdev/dart-v1-sft",
     "tokenizer_name": "p1atdev/dart-v1-sft",
     "model_backend_type": MODEL_BACKEND_TYPE["ONNX_QUANTIZED"],
-    "default_ban_tags": "",
     "model_device": "cpu",
 }
 
@@ -47,11 +45,6 @@ def parse_options(opts) -> dict[OPTION_NAME, Any]:
             opts.model_backend_type
             if hasattr(opts, "model_backend_type")
             else DEFAULT_VALUES["model_backend_type"]
-        ),
-        "default_ban_tags": (
-            opts.default_ban_tags
-            if hasattr(opts, "default_ban_tags")
-            else DEFAULT_VALUES["default_ban_tags"]
         ),
         "model_device": (
             opts.default_ban_tags
@@ -90,15 +83,6 @@ def on_ui_settings():
             label="The type of model backend.",
             component=gr.Dropdown,
             component_args={"choices": list(MODEL_BACKEND_TYPE.values())},
-            section=section,
-        ),
-    )
-    shared.opts.add_option(
-        key="default_ban_tags",
-        info=shared.OptionInfo(
-            default=DEFAULT_VALUES["default_ban_tags"],  # default value
-            label="The default tags to prevent from appearing in tag upsamping.",
-            component=gr.Textbox,
             section=section,
         ),
     )
