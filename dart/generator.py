@@ -12,7 +12,9 @@ from transformers import (
 )
 from optimum.onnxruntime import ORTModelForCausalLM
 
-from dart.settings import MODEL_BACKEND_TYPE
+from modules.shared import opts
+
+from dart.settings import MODEL_BACKEND_TYPE, parse_options
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -31,6 +33,8 @@ class DartGenerator:
         model_backend: str,
         model_device: str = "cpu",
     ):
+        self.options = parse_options(opts)
+
         self.model_name = model_name
         self.tokenizer_name = tokenizer_name
 
@@ -39,6 +43,9 @@ class DartGenerator:
         ), f"Unknown model type: {model_backend}"
         self.model_backend = model_backend
         self.model_device = model_device
+
+        if self.options["debug_logging"]:
+            logger.setLevel(logging.DEBUG)
 
     def _load_dart_model(
         self,
@@ -121,7 +128,7 @@ class DartGenerator:
     @torch.no_grad()
     def generate(
         self,
-        prompts: list[str],
+        prompt: str,
         max_new_tokens: int = 128,
         min_new_tokens: int = 0,
         do_sample: bool = True,
@@ -130,7 +137,9 @@ class DartGenerator:
         top_k: int = 20,
         num_beams: int = 1,
         bad_words_ids: list[list[int]] | None = None,
-    ) -> list[str]:
+    ) -> str:
+        """Upsamples prompt"""
+
         start_time = time.time()
 
         self.load_tokenizer_if_needed()
@@ -139,8 +148,11 @@ class DartGenerator:
         assert self.dart_tokenizer is not None
         assert self.dart_model is not None
 
-        input_ids = self.dart_tokenizer(prompts, return_tensors="pt").input_ids
+        input_ids = self.dart_tokenizer.encode_plus(
+            prompt, return_tensors="pt"
+        ).input_ids
 
+        # output_ids is list[list[int]]
         output_ids = self.dart_model.generate(
             input_ids,
             max_new_tokens=max_new_tokens,
@@ -154,18 +166,13 @@ class DartGenerator:
             no_repeat_ngram_size=1,
         )
 
-        decoded = self.dart_tokenizer.batch_decode(
-            [output[len(input_ids[i]) :] for i, output in enumerate(output_ids)],
-            skip_special_tokens=False,
+        decoded = self.dart_tokenizer.decode(
+            output_ids[0][len(input_ids[0]) :],
+            skip_special_tokens=True,
         )
-
-        # remove prefix special tokens
-        re_encoded = self.dart_tokenizer(decoded).input_ids
-        re_decoded = self.dart_tokenizer.batch_decode(
-            re_encoded, skip_special_tokens=True
-        )
+        logger.debug(f"Generated tags: {decoded}")
 
         end_time = time.time()
         logger.info(f"Upsampling tags has taken {end_time-start_time:.2f} seconds")
 
-        return re_decoded
+        return decoded
