@@ -19,7 +19,7 @@ English version is [here](./README.md).
 | **Total tag length** | これは **タグの補完後のプロンプト内のタグの総量を指定します**。 補完するタグの量ではありません。 `very short` は「タグ10個以下」, `short` は「タグ20個以下」, `long` は「タグ40個以下」、 `very long` は「それよりも多い」を意味します。 | 推奨は `long` です |
 | **Ban tags** | ここで指定された全てのタグは補完時に出現しなくなります。出てきて欲しくないタグがあるときに便利です。 | `official alternate costume, english text, animal focus, ...` |
 | **Seed for upsampling tags** | この値とポジティブプロンプトが固定された場合、補完されるタグも固定されます。`-1` は毎回ことなるシードで補完することを意味します。 | 毎回異なる補完をしてほしい場合は `-1` に設定します。 |
-| **Upsampling timing** | Styles の適用後か適用前のうち、いつアップサンプルを実行するかどうかです。 | `Before applying styles` (Styles の適用前にアップサンプルします) |
+| **Upsampling timing** | sd-dynamic-prompts や webui の styles 機能などの、他のプロンプト加工処理が実行される前にアップサンプルするか、後にアップサンプルするかどうかです。 | `Before applying other prompt processing` |
 
 ## ショーケース
 
