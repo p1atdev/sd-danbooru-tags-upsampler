@@ -19,6 +19,7 @@ OPTION_NAME = Literal[
     "tokenizer_name",
     "model_backend_type",
     "model_device",
+    "debug_logging",
 ]
 
 DEFAULT_VALUES: dict[OPTION_NAME, Any] = {
@@ -26,6 +27,7 @@ DEFAULT_VALUES: dict[OPTION_NAME, Any] = {
     "tokenizer_name": "p1atdev/dart-v1-sft",
     "model_backend_type": MODEL_BACKEND_TYPE["ONNX_QUANTIZED"],
     "model_device": "cpu",
+    "debug_logging": False,
 }
 
 
@@ -51,6 +53,13 @@ def parse_options(opts) -> dict[OPTION_NAME, Any]:
             if hasattr(opts, "model_device")
             else DEFAULT_VALUES["model_device"]
         ),
+        "debug_logging": {
+            (
+                opts.default_ban_tags
+                if hasattr(opts, "debug_logging")
+                else DEFAULT_VALUES["debug_logging"]
+            )
+        },
     }
 
 
@@ -92,6 +101,15 @@ def on_ui_settings():
             default=DEFAULT_VALUES["model_device"],  # default value
             label="The device to run upsampling model on.",
             component=gr.Textbox,
+            section=section,
+        ),
+    )
+    shared.opts.add_option(
+        key="debug_logging",
+        info=shared.OptionInfo(
+            default=DEFAULT_VALUES["debug_logging"],  # default value
+            label="Enblae debug logging.",
+            component=gr.Checkbox,
             section=section,
         ),
     )
