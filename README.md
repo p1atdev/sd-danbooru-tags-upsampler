@@ -21,7 +21,7 @@ Explanation of parameters:
 | **Seed for upsampling tags** | If this number and the positive prompt are fixed, the completion tags are also fixed. `-1` means "generates tags using random seed every time" | If you want to generate images with different final prompts every time, set to `-1`. |
 | **Upsampling timing** | When to upsample, before or after styles are applied. | `Before applying styles` |
 
-## Showcaases
+## Showcases
 
 <table>
     <tr>
