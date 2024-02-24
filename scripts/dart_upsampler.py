@@ -38,8 +38,8 @@ TOTAL_TAG_LENGTH_TAGS = {
 }
 
 PROCESSING_TIMING = {
-    "BEFORE": "Before applying styles",
-    "AFTER": "After applying styles",
+    "BEFORE": "Before applying other prompt processings",
+    "AFTER": "After applying other prompt processings",
 }
 
 extension_dir = basedir()
@@ -73,7 +73,6 @@ class DartUpsampleScript(scripts.Script):
         )
 
         if self.options["debug_logging"]:
-            # global logger
             logger.setLevel(logging.DEBUG)
 
         script_callbacks.on_ui_settings(on_ui_settings)
@@ -85,7 +84,6 @@ class DartUpsampleScript(scripts.Script):
         return scripts.AlwaysVisible
 
     def ui(self, is_img2img):
-
         with gr.Accordion(open=False, label=self.title()):
             with gr.Column():
                 enabled_check = gr.Checkbox(label="Enabled", value=False)
@@ -135,6 +133,25 @@ class DartUpsampleScript(scripts.Script):
                         value=PROCESSING_TIMING["BEFORE"],
                     )
 
+                    def on_process_timing_dropdown_changed(timing: str):
+                        if timing == PROCESSING_TIMING["BEFORE"]:
+                            return "_Prompt upsampling will be applied to **only the first image in batch**, **before** sd-dynamic-promps and the webui's styles feature are applied_"
+                        elif timing == PROCESSING_TIMING["AFTER"]:
+                            return "_Prompt upsampling will be applied to **all images in batch**, **after** sd-dynamic-promps and the webui's styles feature are applied_"
+                        raise Exception(f"Unknown timing: {timing}")
+
+                    process_timing_md = gr.Markdown(
+                        on_process_timing_dropdown_changed(
+                            process_timing_dropdown.value
+                        )
+                    )
+
+                    process_timing_dropdown.change(
+                        on_process_timing_dropdown_changed,
+                        inputs=[process_timing_dropdown],
+                        outputs=[process_timing_md],
+                    )
+
         return [
             enabled_check,
             tag_length_radio,
@@ -152,6 +169,8 @@ class DartUpsampleScript(scripts.Script):
         seed_num: int,
         process_timing: str,
     ):
+        """This method will be called after sd-dynamic-prompts and the styles are applied."""
+
         if not is_enabled:
             return
 
@@ -200,6 +219,8 @@ class DartUpsampleScript(scripts.Script):
         seed_num: int,
         process_timing: str,
     ):
+        """This method will be called before sd-dynamic-prompts and the styles are applied."""
+
         if not is_enabled:
             return
 
