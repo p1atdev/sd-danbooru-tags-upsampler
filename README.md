@@ -10,7 +10,7 @@ It's useful for people who don't want think about long prompt or want to see **d
 
 <img src="./images/screenshot-1.jpg" width="540px" alt="Scrennshot of this extension" />
 
-Open the `Danbooru Tags Upsampler` accordion and check the `Enable` checkbox to enable this extension.
+Open the `Danbooru Tags Upsampler` accordion and check the `Enabled` checkbox to enable this extension.
 
 Explanation of parameters:
 
@@ -19,7 +19,7 @@ Explanation of parameters:
 | **Total tag length** | This parameter can specify the amount of **total tags after completing the positive prompt**. Not the amount of completing tags. `very short` means "less than 10 tags", `short` means "less than 20 tags", `long` means "less than 40 tags" and `very long` is more than that. | `long` is recommended |
 | **Ban tags** | All tags in this field will never appear in completion tags. It's useful when you don't want to contain some specific tags. | `official alternate costume, english text, animal focus, ...` |
 | **Seed for upsampling tags** | If this number and the positive prompt are fixed, the completion tags are also fixed. `-1` means "generates tags using random seed every time" | If you want to generate images with different final prompts every time, set to `-1`. |
-| **Upsampling timing** | When to upsample, before or after styles are applied. | `Before applying styles` |
+| **Upsampling timing** | When to upsample, before or after other prompt processing (e.g. sd-dynamic-prompts or webui's styles feature) are applied.  | `Before applying other prompt processings` |
 
 ## Showcases
 

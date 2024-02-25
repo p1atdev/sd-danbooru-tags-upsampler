@@ -2,97 +2,141 @@ import logging
 from pathlib import Path
 from dataclasses import dataclass
 
-from modules.scripts import basedir
+from modules.shared import opts
+
+from dart.settings import parse_options
+from dart.utils import (
+    SPECIAL_SYMBOL_PATTERN,
+    ESCAPED_SYMBOL_PATTERNS,
+    escape_special_symbols,
+    unescape_special_symbols,
+)
 
 logger = logging.getLogger(__name__)
 
-RATING_TAGS = {
-    "GENERAL": "rating:general",
-    "SENSITIVE": "rating:sensitive",
-    "QUESTIONABLE": "rating:questionable",
-    "EXPLICIT": "rating:explicit",
-    "SFW": "sfw",
-    "NSFW": "nsfw",
-}
+
+DART_RATING_GENERAL = "rating:general"
+DART_RATING_SENSITIVE = "rating:sensitive"
+DART_RATING_QUESTIONABLE = "rating:questionable"
+DART_RATING_EXPLICIT = "rating:explicit"
+
+INPUT_RATING_GENERAL = DART_RATING_GENERAL
+INPUT_RATING_SENSITIVE = DART_RATING_SENSITIVE
+INPUT_RATING_QUESTIONABLE = DART_RATING_QUESTIONABLE
+INPUT_RATING_EXPLICIT = DART_RATING_EXPLICIT
+
+DART_RATING_SFW = "rating:sfw"
+DART_RATING_NSFW = "rating:nsfw"
+
+INPUT_RATING_SFW = "sfw"
+INPUT_RATING_NSFW = "nsfw"
+
+ALL_INPUT_RATING_TAGS = [
+    INPUT_RATING_GENERAL,
+    INPUT_RATING_SENSITIVE,
+    INPUT_RATING_QUESTIONABLE,
+    INPUT_RATING_EXPLICIT,
+    INPUT_RATING_SFW,
+    INPUT_RATING_NSFW,
+]
 
 RATING_TAG_PRIORITY = {
-    "rating:general": 0,
-    "rating:sensitive": 1,
-    "rating:questionable": 2,
-    "rating:explicit": 3,
+    INPUT_RATING_GENERAL: 0,
+    INPUT_RATING_SENSITIVE: 1,
+    INPUT_RATING_QUESTIONABLE: 2,
+    INPUT_RATING_EXPLICIT: 3,
 }
 
-RATING_PARENT_TAGS = {
-    "SFW": "rating:sfw",
-    "NSFW": "rating:nsfw",
-}
+RATING_PARENT_TAG_PRIORITY = {INPUT_RATING_SFW: 0, INPUT_RATING_NSFW: 1}
 
-RATING_PARENT_TAG_PRIORITY = {"sfw": 0, "nsfw": 1}
-
-RATING_DEFAULT_PAIR = RATING_PARENT_TAGS["SFW"], RATING_TAGS["GENERAL"]
+DART_RATING_DEFAULT_PAIR = DART_RATING_SFW, DART_RATING_GENERAL
 
 
-def normalize_rating_tags(tags: list[str]) -> tuple[str, str | None]:
+def get_rating_tag_pair(tag: str) -> tuple[str, str]:
+    if tag == INPUT_RATING_NSFW:  # nsfw
+        return DART_RATING_NSFW, DART_RATING_EXPLICIT
+
+    elif tag == INPUT_RATING_SFW:  # sfw
+        return DART_RATING_DEFAULT_PAIR
+
+    elif tag == INPUT_RATING_GENERAL:  # rating:general
+        return DART_RATING_DEFAULT_PAIR
+
+    elif tag == INPUT_RATING_SENSITIVE:  # rating:general
+        return DART_RATING_SFW, DART_RATING_SENSITIVE
+
+    elif tag == INPUT_RATING_QUESTIONABLE:  # rating:questionable
+        return DART_RATING_NSFW, DART_RATING_QUESTIONABLE
+
+    elif tag == INPUT_RATING_EXPLICIT:  # rating:explicit
+        return DART_RATING_NSFW, DART_RATING_EXPLICIT
+
+    else:
+        raise Exception(f"Unkown rating tag: {tag}")
+
+
+def get_strongest_rating_tag(tags: list[str]) -> str:
+    strongest_tag = INPUT_RATING_GENERAL
+    for tag in tags:
+        if RATING_TAG_PRIORITY[tag] > RATING_TAG_PRIORITY[strongest_tag]:
+            strongest_tag = tag
+    return strongest_tag
+
+
+def normalize_rating_tags(tags: list[str]) -> tuple[str, str]:
     """
     Returns [Parent Rating Tag, Child Rating Tag or None]
     """
 
     if len(tags) == 0:
         # default
-        return RATING_DEFAULT_PAIR
+        return DART_RATING_DEFAULT_PAIR
 
     # only one tag
     if len(tags) == 1:
         tag = tags[0]
 
-        if tag == RATING_TAGS["NSFW"]:
-            return RATING_PARENT_TAGS["NSFW"], None
-        elif tag == RATING_TAGS["SFW"]:
-            return RATING_DEFAULT_PAIR
-        elif tag == RATING_TAGS["GENERAL"]:
-            return RATING_DEFAULT_PAIR
-        elif tag == RATING_TAGS["SENSITIVE"]:
-            return RATING_PARENT_TAGS["SFW"], RATING_TAGS["SENSITIVE"]
-        elif tag == RATING_TAGS["QUESTIONABLE"]:
-            return RATING_PARENT_TAGS["NSFW"], RATING_TAGS["QUESTIONABLE"]
-        elif tag == RATING_TAGS["EXPLICIT"]:
-            return RATING_PARENT_TAGS["NSFW"], RATING_TAGS["EXPLICIT"]
+        return get_rating_tag_pair(tag)
 
     # len(tags) >= 2
 
     # if all of tags are parent tag
-    if all([tag in RATING_PARENT_TAGS for tag in tags]):
+    if all([tag in RATING_PARENT_TAG_PRIORITY.keys() for tag in tags]):
         logger.warning(
-            'Both "sfw" and "nsfw" are specified in positive image prompt! Rating tag fell back to "sfw" for danbooru tag upsampling.'
+            'Both "sfw" and "nsfw" are specified in positive image prompt! Rating tag fell back to "sfw" for upsampling.'
         )
-        return RATING_DEFAULT_PAIR
+        return DART_RATING_DEFAULT_PAIR
 
     # one of the tag is parent tag
-    if any([tag in RATING_PARENT_TAGS for tag in tags]):
-        parent_tag = RATING_TAGS["SFW"]
+    if any([tag in RATING_PARENT_TAG_PRIORITY.keys() for tag in tags]):
+        parent_tag = INPUT_RATING_SFW  # sfw or nsfw
+        child_tags = []
         for tag in tags:
-            if RATING_PARENT_TAG_PRIORITY[tag] > RATING_PARENT_TAG_PRIORITY[parent_tag]:
-                parent_tag = tag
-                break
-        child_tag = [
-            tag
-            for tag in tags
-            if RATING_TAG_PRIORITY[tag]
-            == max([RATING_TAG_PRIORITY[tag] for tag in tags])
-        ][0]
+            if tag in RATING_PARENT_TAG_PRIORITY:
+                if (
+                    RATING_PARENT_TAG_PRIORITY[tag]
+                    > RATING_PARENT_TAG_PRIORITY[parent_tag]
+                ):
+                    parent_tag = tag
+            else:
+                child_tags.append(tag)
+
+        # pick strongest tag
+        child_tag = get_strongest_rating_tag(child_tags)
+
+        fallback_pair = get_rating_tag_pair(parent_tag)
+        if child_tag != fallback_pair[1]:
+            # e.g. rating:general, nsfw
+            logger.warning(
+                f'Specified rating tag "{child_tag}" mismatches to "{parent_tag}". "{fallback_pair[1]}" will be used for upsampling instead.'
+            )
+            return fallback_pair
         return parent_tag, child_tag
 
-    # both are child tag
+    # remains are child tag
     # give priority to the strong
-    strongest_tag = [
-        tag
-        for tag in tags
-        if RATING_TAG_PRIORITY[tag] == max([RATING_TAG_PRIORITY[tag] for tag in tags])
-    ][0]
-    if strongest_tag in [RATING_TAGS["EXPLICIT"], RATING_TAGS["QUESTIONABLE"]]:
-        return RATING_PARENT_TAGS["NSFW"], strongest_tag
-    else:
-        return RATING_PARENT_TAGS["SFW"], strongest_tag
+    strongest_tag = get_strongest_rating_tag(tags)
+    return get_rating_tag_pair(strongest_tag)
 
 
 def load_tags_in_file(path: Path):
@@ -120,12 +164,16 @@ class ImagePromptAnalyzingResult:
 
 
 class DartAnalyzer:
-    """A class for analyzing provided image prompt for composing umsaple prompt"""
+    """A class for analyzing provided prompt and composing prompt for upsampling"""
 
     def __init__(self, extension_dir: str, vocab: list[str], special_vocab: list[str]):
+        self.options = parse_options(opts)
+        if self.options["debug_logging"]:
+            logger.setLevel(logging.DEBUG)
+
         self.tags_dir = Path(extension_dir) / "tags"
 
-        self.rating_tags = list(RATING_TAGS.values())
+        self.rating_tags = ALL_INPUT_RATING_TAGS
 
         self.copyright_tags = load_tags_in_file(self.tags_dir / "copyright.txt")
         self.character_tags = load_tags_in_file(self.tags_dir / "character.txt")
@@ -133,6 +181,12 @@ class DartAnalyzer:
 
         self.vocab = vocab
         self.special_vocab = special_vocab
+
+        if self.options["escape_input_brackets"]:
+            logger.debug("Allows tags with escaped brackets")
+            self.copyright_tags += escape_special_symbols(self.copyright_tags)
+            self.character_tags += escape_special_symbols(self.character_tags)
+            self.vocab += escape_special_symbols(self.vocab)
 
     def split_tags(self, image_prompt: str) -> list[str]:
         return [tag.strip() for tag in image_prompt.split(",") if tag.strip() != ""]
@@ -148,6 +202,15 @@ class DartAnalyzer:
                 not_matched.append(input_tag)
 
         return matched, not_matched
+
+    def preprocess_tags(self, tags: list[str]) -> str:
+        """Preprocess tags to pass to dart model."""
+
+        # \(\) -> ()
+        if self.options["escape_output_brackets"]:
+            tags = unescape_special_symbols(tags)
+
+        return ", ".join(tags)
 
     def analyze(self, image_prompt: str) -> ImagePromptAnalyzingResult:
         input_tags = self.split_tags(image_prompt)
@@ -170,9 +233,9 @@ class DartAnalyzer:
         return ImagePromptAnalyzingResult(
             rating_parent=rating_parent,
             rating_child=rating_child,
-            copyright=", ".join(copyright_tags),
-            character=", ".join(character_tags),
-            general=", ".join(other_tags),
-            quality=", ".join(quality_tags),
-            unknown=", ".join(unknown_tags),
+            copyright=self.preprocess_tags(copyright_tags),
+            character=self.preprocess_tags(character_tags),
+            general=self.preprocess_tags(other_tags),
+            quality=self.preprocess_tags(quality_tags),
+            unknown=self.preprocess_tags(unknown_tags),
         )

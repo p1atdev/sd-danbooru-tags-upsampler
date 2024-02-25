@@ -1,4 +1,5 @@
-import random
+import logging
+
 
 import gradio as gr
 from transformers import set_seed
@@ -15,6 +16,12 @@ from modules.shared import opts
 from dart.generator import DartGenerator
 from dart.analyzer import DartAnalyzer
 from dart.settings import on_ui_settings, parse_options
+import dart.utils as utils
+from dart.utils import SEED_MAX
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
 
 TOTAL_TAG_LENGTH = {
     "VERY_SHORT": "very short",
@@ -31,18 +38,18 @@ TOTAL_TAG_LENGTH_TAGS = {
 }
 
 PROCESSING_TIMING = {
-    "BEFORE": "Before applying styles",
-    "AFTER": "After applying styles",
+    "BEFORE": "Before applying other prompt processings",
+    "AFTER": "After applying other prompt processings",
 }
-
-SEED_MIN = 0
-SEED_MAX = 2**32 - 1
 
 extension_dir = basedir()
 
 
-def get_random_seed():
-    return random.randint(SEED_MIN, SEED_MAX)
+def _concatnate_texts(prefix: list[str], suffix: list[str]) -> list[str]:
+    return [
+        ", ".join([part for part in [prompt, suffix[i]] if part.strip() != ""])
+        for i, prompt in enumerate(prefix)
+    ]
 
 
 class DartUpsampleScript(scripts.Script):
@@ -53,6 +60,8 @@ class DartUpsampleScript(scripts.Script):
         super().__init__()
 
         self.options = parse_options(opts)
+        if self.options["debug_logging"]:
+            logger.setLevel(logging.DEBUG)
 
         self.generator = DartGenerator(
             self.options["model_name"],
@@ -74,7 +83,6 @@ class DartUpsampleScript(scripts.Script):
         return scripts.AlwaysVisible
 
     def ui(self, is_img2img):
-
         with gr.Accordion(open=False, label=self.title()):
             with gr.Column():
                 enabled_check = gr.Checkbox(label="Enabled", value=False)
@@ -86,7 +94,7 @@ class DartUpsampleScript(scripts.Script):
                 )
                 ban_tags_textbox = gr.Textbox(
                     label="Ban tags",
-                    value=self.options["default_ban_tags"],
+                    value="",
                     placeholder="official alternate costume, english text, ...",
                 )
 
@@ -98,7 +106,7 @@ class DartUpsampleScript(scripts.Script):
                             maximum=SEED_MAX,
                             step=1,
                             scale=4,
-                            value=get_random_seed(),  # <- this doesn't work well...
+                            value=-1,
                         )
                         seed_random_btn = gr.Button(value="Randomize")
                         seed_shuffle_btn = gr.Button(value="Shuffle")
@@ -111,7 +119,7 @@ class DartUpsampleScript(scripts.Script):
                         )
 
                         def click_shuffle_seed_btn():
-                            return get_random_seed()
+                            return utils.get_random_seed()
 
                         seed_shuffle_btn.click(
                             click_shuffle_seed_btn, outputs=[seed_num_input]
@@ -122,6 +130,25 @@ class DartUpsampleScript(scripts.Script):
                         label="Upsampling timing",
                         choices=list(PROCESSING_TIMING.values()),
                         value=PROCESSING_TIMING["BEFORE"],
+                    )
+
+                    def on_process_timing_dropdown_changed(timing: str):
+                        if timing == PROCESSING_TIMING["BEFORE"]:
+                            return "_Prompt upsampling will be applied to **only the first image in batch**, **before** sd-dynamic-promps and the webui's styles feature are applied_"
+                        elif timing == PROCESSING_TIMING["AFTER"]:
+                            return "_Prompt upsampling will be applied to **all images in batch**, **after** sd-dynamic-promps and the webui's styles feature are applied_"
+                        raise Exception(f"Unknown timing: {timing}")
+
+                    process_timing_md = gr.Markdown(
+                        on_process_timing_dropdown_changed(
+                            process_timing_dropdown.value
+                        )
+                    )
+
+                    process_timing_dropdown.change(
+                        on_process_timing_dropdown_changed,
+                        inputs=[process_timing_dropdown],
+                        outputs=[process_timing_md],
                     )
 
         return [
@@ -141,6 +168,8 @@ class DartUpsampleScript(scripts.Script):
         seed_num: int,
         process_timing: str,
     ):
+        """This method will be called after sd-dynamic-prompts and the styles are applied."""
+
         if not is_enabled:
             return
 
@@ -148,8 +177,9 @@ class DartUpsampleScript(scripts.Script):
             return
 
         analyzing_results = [self.analyzer.analyze(prompt) for prompt in p.all_prompts]
+        logger.debug(f"Analyzed: {analyzing_results}")
 
-        upsample_prompts = [
+        upsampling_prompt = [
             self.generator.compose_prompt(
                 rating=f"{result.rating_parent}, {result.rating_child}",
                 copyright=result.copyright,
@@ -159,24 +189,26 @@ class DartUpsampleScript(scripts.Script):
             )
             for result in analyzing_results
         ]
+        logger.debug(f"Upsampling prompt: {upsampling_prompt}")
         bad_words_ids = self.generator.get_bad_words_ids(ban_tags)
 
-        # save the original seed
-        original_seed = p.seed if p.seed != -1 else get_random_seed()
-        seed = int(seed_num if seed_num != -1 else get_random_seed())
-
-        set_seed(seed)
-        generated_texts = self.generator.generate(
-            upsample_prompts, bad_words_ids=bad_words_ids
+        num_images = p.n_iter * p.batch_size
+        upsampling_seeds = utils.get_upmsapling_seeds(
+            p,
+            num_images,
+            custom_seed=seed_num,
         )
-        set_seed(original_seed)
 
-        p.all_prompts = [
-            ", ".join(
-                [part for part in [prompt, generated_texts[i]] if part.strip() != ""]
-            )
-            for i, prompt in enumerate(p.all_prompts)
-        ]
+        # this list has only 1 item
+        upsampled_tags = self.upsample_tags(
+            upsampling_prompt,
+            seeds=upsampling_seeds,
+            bad_words_ids=bad_words_ids,
+        )
+        logger.debug(f"Upsampled tags: {upsampled_tags}")
+
+        # set new prompts
+        p.all_prompts = _concatnate_texts(p.all_prompts, upsampled_tags)
 
     def before_process(
         self,
@@ -187,6 +219,8 @@ class DartUpsampleScript(scripts.Script):
         seed_num: int,
         process_timing: str,
     ):
+        """This method will be called before sd-dynamic-prompts and the styles are applied."""
+
         if not is_enabled:
             return
 
@@ -194,26 +228,48 @@ class DartUpsampleScript(scripts.Script):
             return
 
         analyzing_result = self.analyzer.analyze(p.prompt)
+        logger.debug(f"Analyzed: {analyzing_result}")
 
-        upsample_prompt = self.generator.compose_prompt(
+        upsampling_prompt = self.generator.compose_prompt(
             rating=f"{analyzing_result.rating_parent}, {analyzing_result.rating_child}",
             copyright=analyzing_result.copyright,
             character=analyzing_result.character,
             general=analyzing_result.general,
             length=TOTAL_TAG_LENGTH_TAGS[tag_length],
         )
+        logger.debug(f"Upsampling prompt: {upsampling_prompt}")
         bad_words_ids = self.generator.get_bad_words_ids(ban_tags)
 
-        # save the original seed
-        original_seed = p.seed if p.seed != -1 else get_random_seed()
-        seed = int(seed_num if seed_num != -1 else get_random_seed())
-
-        set_seed(seed)
-        generated_texts = self.generator.generate(
-            [upsample_prompt], bad_words_ids=bad_words_ids
+        upsampling_seeds = utils.get_upmsapling_seeds(
+            p,
+            num_seeds=1,  # only for the first prompt
+            custom_seed=seed_num,
         )
-        set_seed(original_seed)
 
-        p.prompt = ", ".join(
-            [part for part in [p.prompt, generated_texts[0]] if part.strip() != ""]
+        # this list has only 1 item
+        upsampled_tags = self.upsample_tags(
+            [upsampling_prompt],
+            seeds=upsampling_seeds,
+            bad_words_ids=bad_words_ids,
         )
+        logger.debug(f"Upsampled tags: {upsampled_tags}")
+
+        # set a new prompt
+        p.prompt = _concatnate_texts([p.prompt], upsampled_tags)[0]
+
+    def upsample_tags(
+        self,
+        prompts: list[str],
+        seeds: list[int],
+        bad_words_ids: list[list[int]] | None = None,
+    ) -> list[str]:
+        if len(prompts) == 1 and len(prompts) != len(seeds):
+            prompts = prompts * len(seeds)
+
+        upsampled_tags = []
+        for prompt, seed in zip(prompts, seeds, strict=True):
+            set_seed(seed)
+            upsampled_tags.append(
+                self.generator.generate(prompt, bad_words_ids=bad_words_ids)
+            )
+        return upsampled_tags
