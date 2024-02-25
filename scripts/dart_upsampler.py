@@ -45,11 +45,12 @@ PROCESSING_TIMING = {
 extension_dir = basedir()
 
 
+def _join_texts(prefix: str, suffix: str) -> str:
+    return ", ".join([part for part in [prefix, suffix] if part.strip() != ""])
+
+
 def _concatnate_texts(prefix: list[str], suffix: list[str]) -> list[str]:
-    return [
-        ", ".join([part for part in [prompt, suffix[i]] if part.strip() != ""])
-        for i, prompt in enumerate(prefix)
-    ]
+    return [_join_texts(prompt, suffix[i]) for i, prompt in enumerate(prefix)]
 
 
 class DartUpsampleScript(scripts.Script):
@@ -151,12 +152,72 @@ class DartUpsampleScript(scripts.Script):
                         outputs=[process_timing_md],
                     )
 
+                with gr.Accordion(label="Generation config", open=False):
+                    do_cfg_check = gr.Checkbox(
+                        label="Do CFG",
+                        info="Enables classifier-free guidance, this takes double of computation",
+                    )
+                    negative_prompt_textbox = gr.Textbox(
+                        label="Negative tags",
+                        placeholder="simple background, ...",
+                        value="",
+                    )
+                    cfg_scale_slider = gr.Slider(
+                        label="CFG scale",
+                        minimum=0.1,
+                        maximum=3.0,
+                        value=1.5,
+                        step=0.1,
+                    )
+
+                    temperature_slider = gr.Slider(
+                        label="Temperature",
+                        info="← less random ... more random →",
+                        maximum=2.0,
+                        minimum=0.0,
+                        step=0.01,
+                        value=1.0,
+                    )
+                    top_p_slider = gr.Slider(
+                        label="Top p",
+                        info="← less random ... more random →",
+                        maximum=1.0,
+                        minimum=0.0,
+                        step=0.01,
+                        value=1.0,
+                    )
+                    top_k_slider = gr.Slider(
+                        label="Top k",
+                        info="← less random ... more random →",
+                        maximum=2000,
+                        minimum=10,
+                        step=10,
+                        value=20,
+                    )
+
+                    num_beams_slider = gr.Slider(
+                        label="Num beams",
+                        info="← more random ... less random →",
+                        maximum=20,
+                        minimum=1,
+                        step=1,
+                        value=1,
+                    )
+
         return [
             enabled_check,
             tag_length_radio,
             ban_tags_textbox,
             seed_num_input,
             process_timing_dropdown,
+            # generation config
+            do_cfg_check,
+            negative_prompt_textbox,
+            cfg_scale_slider,
+            temperature_slider,
+            top_p_slider,
+            top_k_slider,
+            num_beams_slider,
         ]
 
     def process(
@@ -167,6 +228,14 @@ class DartUpsampleScript(scripts.Script):
         ban_tags: str,
         seed_num: int,
         process_timing: str,
+        # generation config
+        do_cfg: bool,
+        negative_prompt: str,
+        cfg_scale: float,
+        temperature: float,
+        top_p: float,
+        top_k: int,
+        num_bemas: int,
     ):
         """This method will be called after sd-dynamic-prompts and the styles are applied."""
 
@@ -192,6 +261,25 @@ class DartUpsampleScript(scripts.Script):
         logger.debug(f"Upsampling prompt: {upsampling_prompt}")
         bad_words_ids = self.generator.get_bad_words_ids(ban_tags)
 
+        upsampling_negative_prompts = []
+        if do_cfg and negative_prompt is not None:
+            negative_analyzing_result = self.analyzer.analyze(negative_prompt)
+            logger.debug(f"Analyzed (negative): {negative_analyzing_result}")
+
+            for analyzing_result in analyzing_results:
+                upsampling_negative_prompt = self.generator.compose_prompt(
+                    rating=f"{analyzing_result.rating_parent}, {analyzing_result.rating_child}",
+                    copyright=_join_texts(
+                        analyzing_result.copyright, negative_analyzing_result.copyright
+                    ),
+                    character=_join_texts(
+                        analyzing_result.character, negative_analyzing_result.character
+                    ),
+                    general=negative_analyzing_result.general,
+                    length=TOTAL_TAG_LENGTH_TAGS[tag_length],
+                )
+                upsampling_negative_prompts.append(upsampling_negative_prompt)
+
         num_images = p.n_iter * p.batch_size
         upsampling_seeds = utils.get_upmsapling_seeds(
             p,
@@ -200,10 +288,16 @@ class DartUpsampleScript(scripts.Script):
         )
 
         # this list has only 1 item
-        upsampled_tags = self.upsample_tags(
+        upsampled_tags = self._upsample_tags(
             upsampling_prompt,
             seeds=upsampling_seeds,
+            temperature=float(temperature),
+            top_p=float(top_p),
+            top_k=int(top_k),
+            num_bemas=int(num_bemas),
             bad_words_ids=bad_words_ids,
+            negative_prompts=upsampling_negative_prompts if do_cfg else None,
+            cfg_scale=float(cfg_scale),
         )
         logger.debug(f"Upsampled tags: {upsampled_tags}")
 
@@ -218,6 +312,14 @@ class DartUpsampleScript(scripts.Script):
         ban_tags: str,
         seed_num: int,
         process_timing: str,
+        # generation config
+        do_cfg: bool,
+        negative_prompt: str,
+        cfg_scale: float,
+        temperature: float,
+        top_p: float,
+        top_k: int,
+        num_bemas: int,
     ):
         """This method will be called before sd-dynamic-prompts and the styles are applied."""
 
@@ -240,6 +342,23 @@ class DartUpsampleScript(scripts.Script):
         logger.debug(f"Upsampling prompt: {upsampling_prompt}")
         bad_words_ids = self.generator.get_bad_words_ids(ban_tags)
 
+        upsampling_negative_prompt = None
+        if do_cfg and negative_prompt is not None:
+            negative_analyzing_result = self.analyzer.analyze(p.prompt)
+            logger.debug(f"Analyzed (negative): {analyzing_result}")
+
+            upsampling_negative_prompt = self.generator.compose_prompt(
+                rating=f"{analyzing_result.rating_parent}, {analyzing_result.rating_child}",
+                copyright=_join_texts(
+                    analyzing_result.copyright, negative_analyzing_result.copyright
+                ),
+                character=_join_texts(
+                    analyzing_result.character, negative_analyzing_result.character
+                ),
+                general=negative_analyzing_result.general,
+                length=TOTAL_TAG_LENGTH_TAGS[tag_length],
+            )
+
         upsampling_seeds = utils.get_upmsapling_seeds(
             p,
             num_seeds=1,  # only for the first prompt
@@ -247,29 +366,56 @@ class DartUpsampleScript(scripts.Script):
         )
 
         # this list has only 1 item
-        upsampled_tags = self.upsample_tags(
+        upsampled_tags = self._upsample_tags(
             [upsampling_prompt],
             seeds=upsampling_seeds,
+            temperature=float(temperature),
+            top_p=float(top_p),
+            top_k=int(top_k),
+            num_bemas=int(num_bemas),
             bad_words_ids=bad_words_ids,
+            negative_prompts=(
+                [upsampling_negative_prompt]
+                if upsampling_negative_prompt is not None
+                else None
+            ),
+            cfg_scale=float(cfg_scale),
         )
         logger.debug(f"Upsampled tags: {upsampled_tags}")
 
         # set a new prompt
         p.prompt = _concatnate_texts([p.prompt], upsampled_tags)[0]
 
-    def upsample_tags(
+    def _upsample_tags(
         self,
         prompts: list[str],
         seeds: list[int],
+        temperature: float = 1.0,
+        top_p: float = 1.0,
+        top_k: int = 20,
+        num_bemas: int = 1,
         bad_words_ids: list[list[int]] | None = None,
+        negative_prompts: list[str] | None = None,
+        cfg_scale: float = 1.5,
     ) -> list[str]:
         if len(prompts) == 1 and len(prompts) != len(seeds):
             prompts = prompts * len(seeds)
 
         upsampled_tags = []
-        for prompt, seed in zip(prompts, seeds, strict=True):
+        for i, (prompt, seed) in enumerate(zip(prompts, seeds, strict=True)):
             set_seed(seed)
             upsampled_tags.append(
-                self.generator.generate(prompt, bad_words_ids=bad_words_ids)
+                self.generator.generate(
+                    prompt,
+                    temperature=temperature,
+                    top_p=top_p,
+                    top_k=top_k,
+                    num_beams=num_bemas,
+                    bad_words_ids=bad_words_ids,
+                    negative_prompt=(
+                        negative_prompts[i] if negative_prompts is not None else None
+                    ),
+                    cfg_scale=cfg_scale,
+                )
             )
         return upsampled_tags

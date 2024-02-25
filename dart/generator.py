@@ -9,6 +9,7 @@ from transformers import (
     PreTrainedModel,
     PreTrainedTokenizer,
     PreTrainedTokenizerFast,
+    LogitsProcessorList,
 )
 from optimum.onnxruntime import ORTModelForCausalLM
 
@@ -16,6 +17,7 @@ from modules.shared import opts
 
 from dart.settings import MODEL_BACKEND_TYPE, parse_options
 from dart.utils import escape_special_symbols
+from dart.logits_processor import UnbatchedClassifierFreeGuidanceLogitsProcessor
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -139,6 +141,8 @@ class DartGenerator:
         top_k: int = 20,
         num_beams: int = 1,
         bad_words_ids: list[list[int]] | None = None,
+        negative_prompt: str | None = None,
+        cfg_scale: float = 1.5,
     ) -> str:
         """Upsamples prompt"""
 
@@ -153,6 +157,14 @@ class DartGenerator:
         input_ids = self.dart_tokenizer.encode_plus(
             prompt, return_tensors="pt"
         ).input_ids
+        negative_prompt_ids = (
+            self.dart_tokenizer.encode_plus(
+                negative_prompt,
+                return_tensors="pt",
+            ).input_ids
+            if negative_prompt is not None
+            else None
+        )
 
         # output_ids is list[list[int]]
         output_ids = self.dart_model.generate(
@@ -166,6 +178,19 @@ class DartGenerator:
             num_beams=num_beams,
             bad_words_ids=bad_words_ids,
             no_repeat_ngram_size=1,
+            logits_processor=(
+                LogitsProcessorList(
+                    [
+                        UnbatchedClassifierFreeGuidanceLogitsProcessor(
+                            guidance_scale=cfg_scale,
+                            model=self.dart_model,
+                            unconditional_ids=negative_prompt_ids,
+                        )
+                    ]
+                )
+                if negative_prompt_ids is not None
+                else None
+            ),
         )
 
         decoded = self.dart_tokenizer.decode(
