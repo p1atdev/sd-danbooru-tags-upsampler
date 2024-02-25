@@ -42,7 +42,10 @@ def get_upmsapling_seeds(
         # if custom_seed is specified, use the same seeds for prompts
         all_subseeds = [int(custom_seed)] * num_seeds
     else:
-        all_subseeds = [subseed + i for i in range(num_seeds)]
+        # increase randomness by adding images' seeds
+        all_subseeds = [
+            (int(p.seed) + subseed + i) % SEED_MAX for i in range(num_seeds)
+        ]
 
     return all_subseeds
 
