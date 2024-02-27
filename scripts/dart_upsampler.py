@@ -42,6 +42,25 @@ PROCESSING_TIMING = {
     "AFTER": "After applying other prompt processings",
 }
 
+VARIETY_OPTIONS = {
+    "VERY_UNVARIED": "very unvaried",
+    "UNVARIED": "unvaried",
+    "NORMAL": "normal",
+    "VARIED": "varied",
+    "VERY_VARIED": "very varied",
+}
+# value: kye
+VARIETY_OPTIONS_VK = {v: k for k, v in VARIETY_OPTIONS.items()}
+
+VARIETY_PRESETS = {
+    # [temperature, top_p, top_k, num_beams]
+    "VERY_UNVARIED": [0.85, 0.9, 20, 2],
+    "UNVARIED": [0.9, 0.95, 20, 1],
+    "NORMAL": [1.0, 1, 30, 1],
+    "VARIED": [1.5, 1, 50, 1],
+    "VERY_VARIED": [2.0, 0.9, 100, 1],
+}
+
 extension_dir = basedir()
 
 
@@ -152,15 +171,25 @@ class DartUpsampleScript(scripts.Script):
                         outputs=[process_timing_md],
                     )
 
+                with gr.Group():
+                    variety_preset_radio = gr.Radio(
+                        label="Variety level",
+                        info="Just easy presets of generation config below",
+                        choices=list(VARIETY_OPTIONS.values()),
+                        value=VARIETY_OPTIONS["NORMAL"],
+                    )
+
                 with gr.Accordion(label="Generation config", open=False):
                     do_cfg_check = gr.Checkbox(
                         label="Do CFG",
                         info="Enables classifier-free guidance, this takes double of computation",
+                        visible=False,
                     )
                     negative_prompt_textbox = gr.Textbox(
                         label="Negative tags",
                         placeholder="simple background, ...",
                         value="",
+                        visible=False,
                     )
                     cfg_scale_slider = gr.Slider(
                         label="CFG scale",
@@ -168,19 +197,20 @@ class DartUpsampleScript(scripts.Script):
                         maximum=3.0,
                         value=1.5,
                         step=0.1,
+                        visible=False,
                     )
 
                     temperature_slider = gr.Slider(
                         label="Temperature",
-                        info="← less random ... more random →",
-                        maximum=2.0,
-                        minimum=0.0,
+                        info="← less random | more random →",
+                        maximum=4.0,
+                        minimum=0.1,
                         step=0.01,
                         value=1.0,
                     )
                     top_p_slider = gr.Slider(
                         label="Top p",
-                        info="← less random ... more random →",
+                        info="← less random | more random →",
                         maximum=1.0,
                         minimum=0.0,
                         step=0.01,
@@ -188,8 +218,8 @@ class DartUpsampleScript(scripts.Script):
                     )
                     top_k_slider = gr.Slider(
                         label="Top k",
-                        info="← less random ... more random →",
-                        maximum=2000,
+                        info="← less random | more random →",
+                        maximum=1000,
                         minimum=10,
                         step=10,
                         value=20,
@@ -197,12 +227,30 @@ class DartUpsampleScript(scripts.Script):
 
                     num_beams_slider = gr.Slider(
                         label="Num beams",
-                        info="← more random ... less random →",
+                        info="← more random, less computation | less random, more computation →",
                         maximum=20,
                         minimum=1,
                         step=1,
                         value=1,
                     )
+
+                # update generation config when the preset is changed
+                def on_variety_preset_radio_change(level: str):
+                    if level in VARIETY_OPTIONS.values():
+                        return VARIETY_PRESETS[VARIETY_OPTIONS_VK[level]]
+                    else:
+                        raise Exception(f"Unknown variety level: {level}")
+
+                variety_preset_radio.change(
+                    on_variety_preset_radio_change,
+                    inputs=[variety_preset_radio],
+                    outputs=[
+                        temperature_slider,
+                        top_p_slider,
+                        top_k_slider,
+                        num_beams_slider,
+                    ],
+                )
 
         return [
             enabled_check,
@@ -398,6 +446,8 @@ class DartUpsampleScript(scripts.Script):
         negative_prompts: list[str] | None = None,
         cfg_scale: float = 1.5,
     ) -> list[str]:
+        """Upsamples tags using provided prompts and returns added tags."""
+
         if len(prompts) == 1 and len(prompts) != len(seeds):
             prompts = prompts * len(seeds)
 
