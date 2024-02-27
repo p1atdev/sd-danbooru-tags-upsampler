@@ -221,7 +221,7 @@ class DartUpsampleScript(scripts.Script):
                         info="← less random | more random →",
                         maximum=1000,
                         minimum=10,
-                        step=10,
+                        step=1,
                         value=20,
                     )
 
