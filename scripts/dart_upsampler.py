@@ -114,8 +114,9 @@ class DartUpsampleScript(scripts.Script):
                 )
                 ban_tags_textbox = gr.Textbox(
                     label="Ban tags",
+                    info='Using "*" matches to any characters (e.g. "* ears" matches to "animal ears", "cat ears", ...)',
                     value="",
-                    placeholder="official alternate costume, english text, ...",
+                    placeholder="umbrella, official *, * text, * background, ...",
                 )
 
                 with gr.Group():

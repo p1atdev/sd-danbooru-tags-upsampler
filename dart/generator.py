@@ -1,6 +1,7 @@
 import logging
 
 import time
+import re
 
 import torch
 from transformers import (
@@ -16,7 +17,11 @@ from optimum.onnxruntime import ORTModelForCausalLM
 from modules.shared import opts
 
 from dart.settings import MODEL_BACKEND_TYPE, parse_options
-from dart.utils import escape_special_symbols
+from dart.utils import (
+    escape_webui_special_symbols,
+    get_valid_tag_list,
+    get_patterns_from_tag_list,
+)
 from dart.logits_processor import UnbatchedClassifierFreeGuidanceLogitsProcessor
 
 logger = logging.getLogger(__name__)
@@ -126,8 +131,24 @@ class DartGenerator:
         self.load_tokenizer_if_needed()
         assert self.dart_tokenizer is not None
 
-        bad_words_ids = self.dart_tokenizer.encode_plus(tag_text).input_ids
-        return [[token] for token in bad_words_ids]
+        self.dart_tokenizer.sanitize_special_tokens()
+
+        # get ban tag pattern by regex
+        ban_tags = get_valid_tag_list(tag_text)
+        ban_tag_patterns = get_patterns_from_tag_list(ban_tags)
+
+        # filter matched tokens from vocab
+        ban_words_ids: list[int] = []
+        for pattern in ban_tag_patterns:
+            for tag, id in self.dart_tokenizer.vocab.items():  # type:ignore
+                if pattern.match(tag):
+                    ban_words_ids.append(id)
+
+        # dedup
+        ban_words_ids = list(set(ban_words_ids))
+
+        # return type should be list[list[int]]
+        return [[id] for id in ban_words_ids]
 
     @torch.no_grad()
     def generate(
@@ -199,7 +220,7 @@ class DartGenerator:
         )
         logger.debug(f"Generated tags: {decoded}")
 
-        escaped = ", ".join(escape_special_symbols(decoded.split(", ")))
+        escaped = ", ".join(escape_webui_special_symbols(decoded.split(", ")))
 
         end_time = time.time()
         logger.info(f"Upsampling tags has taken {end_time-start_time:.2f} seconds")

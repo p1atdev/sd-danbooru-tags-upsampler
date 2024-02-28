@@ -2,10 +2,19 @@ import logging
 import random
 import re
 
-from modules.processing import (
-    StableDiffusionProcessingTxt2Img,
-    StableDiffusionProcessingImg2Img,
-)
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from modules.processing import (
+        StableDiffusionProcessingTxt2Img,
+        StableDiffusionProcessingImg2Img,
+    )
+
+    StableDiffusionProcessing = (
+        StableDiffusionProcessingTxt2Img | StableDiffusionProcessingImg2Img
+    )
+else:
+    StableDiffusionProcessing = Any
 
 
 logger = logging.getLogger(__name__)
@@ -13,11 +22,14 @@ logger = logging.getLogger(__name__)
 SEED_MIN = 0
 SEED_MAX = 2**32 - 1
 
-# webuiの特殊な挙動をするタグ
+# special symbols in webui prompt syntax
 SPECIAL_SYMBOL_PATTERN = re.compile(r"([()])")
 
 # escaped and unescaped symbols pair to unescaping processing
 ESCAPED_SYMBOL_PATTERNS = {re.compile(r"\\\("): "(", re.compile(r"\\\)"): ")"}
+
+# a pttern of escaping special symbols in regex
+TAG_ESCAPE_SYMBOL_PATTERN = re.compile(r"[\\^${}[\]()?+|]")
 
 
 def get_random_seed():
@@ -26,7 +38,7 @@ def get_random_seed():
 
 # ref: https://github.com/adieyal/sd-dynamic-prompts/blob/main/sd_dynamic_prompts/helpers.py
 def get_upmsapling_seeds(
-    p: StableDiffusionProcessingTxt2Img | StableDiffusionProcessingImg2Img,
+    p: StableDiffusionProcessing,
     num_seeds: int,
     custom_seed: int,
 ) -> list[int]:
@@ -50,7 +62,7 @@ def get_upmsapling_seeds(
     return all_subseeds
 
 
-def escape_special_symbols(tags: list[str]) -> list[str]:
+def escape_webui_special_symbols(tags: list[str]) -> list[str]:
     """Returns tags only which has brackets escaped."""
 
     escaped_tags = [SPECIAL_SYMBOL_PATTERN.sub(r"\\\1", tag) for tag in tags]
@@ -58,7 +70,7 @@ def escape_special_symbols(tags: list[str]) -> list[str]:
     return escaped_tags
 
 
-def unescape_special_symbols(tags: list[str]) -> list[str]:
+def unescape_webui_special_symbols(tags: list[str]) -> list[str]:
     """Returns all tags after unescaping."""
     unescaped_tags = []
 
@@ -69,3 +81,26 @@ def unescape_special_symbols(tags: list[str]) -> list[str]:
         unescaped_tags.append(tag)
 
     return unescaped_tags
+
+
+def _get_tag_pattern(tag: str) -> re.Pattern:
+    """Returns a regex pattern of a tag"""
+
+    if "*" in tag:
+        tag = tag.replace("*", ".*")
+        tag = TAG_ESCAPE_SYMBOL_PATTERN.sub(lambda m: "\\" + m.group(0), tag)
+    else:
+        # escape all
+        tag = re.escape(tag)
+
+    return re.compile(tag)
+
+
+def get_patterns_from_tag_list(tags: list[str]) -> list[re.Pattern]:
+    """Returns regex patterns from tag list"""
+    return [_get_tag_pattern(tag) for tag in tags]
+
+
+def get_valid_tag_list(tag_text: str) -> list[str]:
+    """Returns a list of non-empty tags from a tag text"""
+    return [tag.strip() for tag in tag_text.split(",") if tag.strip() != ""]
