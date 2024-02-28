@@ -6,6 +6,11 @@ English version is [here](./README.md).
 
 長いプロンプトを考えたくない場合や、何も考えないで**多様**かつ**自然**で**高品質**な画像を見ていたいという場合に便利です。
 
+## 更新履歴
+
+- 2024/2/25: v0.1.1。シード値の処理、括弧のエスケープ処理、軽微な不具合が修正されました。
+- 2024/2/23: 最初のバージョンである v0.1.0 をリリースしました
+
 ## 使い方
 
 <img src="./images/screenshot-1.jpg" width="540px" alt="拡張機能のスクリーンショット" />
@@ -17,9 +22,11 @@ English version is [here](./README.md).
 | パラメーター名 | 説明 | 例 |
 | -------------- | ----------- | ------------- |
 | **Total tag length** | これは **タグの補完後のプロンプト内のタグの総量を指定します**。 補完するタグの量ではありません。 `very short` は「タグ10個以下」, `short` は「タグ20個以下」, `long` は「タグ40個以下」、 `very long` は「それよりも多い」を意味します。 | 推奨は `long` です |
-| **Ban tags** | ここで指定された全てのタグは補完時に出現しなくなります。出てきて欲しくないタグがあるときに便利です。 | `official alternate costume, english text, animal focus, ...` |
+| **Ban tags** | ここで指定された全てのタグは補完時に出現しなくなります。出てきて欲しくないタグがあるときに便利です。`*` は全ての文字列にマッチします。(例: `* background` は `simple background`、`white background` 等にマッチします) | `official alternate costume, english text, * background, ...` |
 | **Seed for upsampling tags** | この値とポジティブプロンプトが固定された場合、補完されるタグも固定されます。`-1` は毎回ことなるシードで補完することを意味します。 | 毎回異なる補完をしてほしい場合は `-1` に設定します。 |
-| **Upsampling timing** | sd-dynamic-prompts や webui の styles 機能などの、他のプロンプト加工処理が実行される前にアップサンプルするか、後にアップサンプルするかどうかです。 | `Before applying other prompt processing` |
+| **Upsampling timing** | sd-dynamic-prompts や webui の styles 機能などの、他のプロンプト加工処理が実行される前にアップサンプルするか、後にアップサンプルするかどうかです。 | `After applying other prompt processing` |
+| **Variety level** | このパラメーターは `Generation config` のプリセットです。アップサンプルされるタグの多様度を指定できます。 | `varied` |
+| **Generation config** | タグの生成に利用される LLM のパラメーターです。言語モデルの生成パラメーターに詳しくない場合は触らず、 `Variety level` を使うことをおすすめします。 ||
 
 ## ショーケース
 
@@ -107,6 +114,12 @@ nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit,
 🤗 Space 上にデモがあるのでインストール不要で試すことができます:
 
 デモ: https://huggingface.co/spaces/p1atdev/danbooru-tags-transformer
+
+## デフォルト値を変更するには？
+
+`[webui のルート]/ui-config.json` を開き、`customscript/dart_upsampler.py/` で始まるパラメーターを探して編集してください。
+
+もしデフォルト値が壊れていると感じたら、それらのパラメータを削除することでデフォルト値をリセットできます。
 
 ## 謝辞
 

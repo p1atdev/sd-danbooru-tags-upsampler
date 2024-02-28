@@ -6,6 +6,11 @@ An extension for Stable Diffusion Web UI that upsamples prompts by generating or
 
 It's useful for people who don't want think about long prompt or want to see **diverse**, **natural** and **high quality** images without any thinking.
 
+## Upsates
+
+- 2024/2/25: v0.1.1 has been released. Handling of seeds, escaping processing of brackets and many bugs are fixed.
+- 2024/2/23: First version v0.1.0 has been released.
+
 ## Usage
 
 <img src="./images/screenshot-1.jpg" width="540px" alt="Scrennshot of this extension" />
@@ -17,9 +22,14 @@ Explanation of parameters:
 | Parameter name | Description | Example value |
 | -------------- | ----------- | ------------- |
 | **Total tag length** | This parameter can specify the amount of **total tags after completing the positive prompt**. Not the amount of completing tags. `very short` means "less than 10 tags", `short` means "less than 20 tags", `long` means "less than 40 tags" and `very long` is more than that. | `long` is recommended |
-| **Ban tags** | All tags in this field will never appear in completion tags. It's useful when you don't want to contain some specific tags. | `official alternate costume, english text, animal focus, ...` |
+| **Ban tags** | All tags in this field will never appear in completion tags. It's useful when you don't want to contain some specific tags. Using `*` maches to any character. (e.g. `* background` matches to `simple background`, `white background`, ...) | `official alternate costume, english text, * background, ...` |
 | **Seed for upsampling tags** | If this number and the positive prompt are fixed, the completion tags are also fixed. `-1` means "generates tags using random seed every time" | If you want to generate images with different final prompts every time, set to `-1`. |
-| **Upsampling timing** | When to upsample, before or after other prompt processing (e.g. sd-dynamic-prompts or webui's styles feature) are applied.  | `Before applying other prompt processings` |
+| **Upsampling timing** | When to upsample, before or after other prompt processing (e.g. sd-dynamic-prompts or webui's styles feature) are applied.  | `After applying other prompt processings` |
+| **Variety level** | These parameters are presets of the `Generation config`. This can change the variety of upsampled tags. | `varied` |
+| **Generation config** | LLM parameters of generating tags. It's recommended not to touch if you are not familiar with language model's generation parameters, and use `Variety level` option instead. ||
+
+<img src="./images/screenshot-2.jpg" width="540px" alt="Scrennshot of generation config options" />
+
 
 ## Showcases
 
@@ -109,6 +119,11 @@ A demo on 🤗 Space is avaiable, so you can try upsampling tags without install
 
 Demo: https://huggingface.co/spaces/p1atdev/danbooru-tags-transformer
 
+## How to change default values?
+
+Open `[webui's root directory]/ui-config.json`, then find parameters staring with `customscript/dart_upsampler.py/` and edit them.
+
+If you feel that the default values are broken, you can delete parameters staring with `customscript/dart_upsampler.py/txt2img/` to reset the default values.
 
 ## Acknowledgements
 
