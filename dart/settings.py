@@ -84,6 +84,8 @@ def on_ui_settings():
             component=gr.Dropdown,
             component_args={"choices": list(MODEL_BACKEND_TYPE.values())},
             section=section,
+        ).info(
+            "Original = inefficient computation; ONNX = efficient computing but the model size is very large; ONNX (Quantized) = efficient computation, smallest model file size, and fastest"
         ),
     )
     shared.opts.add_option(

@@ -6,10 +6,8 @@ from modules.shared import opts
 
 from dart.settings import parse_options
 from dart.utils import (
-    SPECIAL_SYMBOL_PATTERN,
-    ESCAPED_SYMBOL_PATTERNS,
-    escape_special_symbols,
-    unescape_special_symbols,
+    escape_webui_special_symbols,
+    unescape_webui_special_symbols,
 )
 
 logger = logging.getLogger(__name__)
@@ -184,9 +182,9 @@ class DartAnalyzer:
 
         if self.options["escape_input_brackets"]:
             logger.debug("Allows tags with escaped brackets")
-            self.copyright_tags += escape_special_symbols(self.copyright_tags)
-            self.character_tags += escape_special_symbols(self.character_tags)
-            self.vocab += escape_special_symbols(self.vocab)
+            self.copyright_tags += escape_webui_special_symbols(self.copyright_tags)
+            self.character_tags += escape_webui_special_symbols(self.character_tags)
+            self.vocab += escape_webui_special_symbols(self.vocab)
 
     def split_tags(self, image_prompt: str) -> list[str]:
         return [tag.strip() for tag in image_prompt.split(",") if tag.strip() != ""]
@@ -208,7 +206,7 @@ class DartAnalyzer:
 
         # \(\) -> ()
         if self.options["escape_output_brackets"]:
-            tags = unescape_special_symbols(tags)
+            tags = unescape_webui_special_symbols(tags)
 
         return ", ".join(tags)
 

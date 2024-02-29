@@ -6,6 +6,12 @@ English version is [here](./README.md).
 
 長いプロンプトを考えたくない場合や、何も考えないで**多様**かつ**自然**で**高品質**な画像を見ていたいという場合に便利です。
 
+## 更新履歴
+
+- 2024/2/29: v0.2.0。新機能: 生成オプション、多様性レベル、範囲禁止タグの実装。
+- 2024/2/25: v0.1.1。シード値の処理、括弧のエスケープ処理、軽微な不具合が修正されました。
+- 2024/2/23: 最初のバージョンである v0.1.0 をリリースしました
+
 ## 使い方
 
 <img src="./images/screenshot-1.jpg" width="540px" alt="拡張機能のスクリーンショット" />
@@ -17,9 +23,11 @@ English version is [here](./README.md).
 | パラメーター名 | 説明 | 例 |
 | -------------- | ----------- | ------------- |
 | **Total tag length** | これは **タグの補完後のプロンプト内のタグの総量を指定します**。 補完するタグの量ではありません。 `very short` は「タグ10個以下」, `short` は「タグ20個以下」, `long` は「タグ40個以下」、 `very long` は「それよりも多い」を意味します。 | 推奨は `long` です |
-| **Ban tags** | ここで指定された全てのタグは補完時に出現しなくなります。出てきて欲しくないタグがあるときに便利です。 | `official alternate costume, english text, animal focus, ...` |
+| **Ban tags** | ここで指定された全てのタグは補完時に出現しなくなります。出てきて欲しくないタグがあるときに便利です。`*` は全ての文字列にマッチします。(例: `* background` は `simple background`、`white background` 等にマッチします) | `official alternate costume, english text, * background, ...` |
 | **Seed for upsampling tags** | この値とポジティブプロンプトが固定された場合、補完されるタグも固定されます。`-1` は毎回ことなるシードで補完することを意味します。 | 毎回異なる補完をしてほしい場合は `-1` に設定します。 |
-| **Upsampling timing** | sd-dynamic-prompts や webui の styles 機能などの、他のプロンプト加工処理が実行される前にアップサンプルするか、後にアップサンプルするかどうかです。 | `Before applying other prompt processing` |
+| **Upsampling timing** | sd-dynamic-prompts や webui の styles 機能などの、他のプロンプト加工処理が実行される前にアップサンプルするか、後にアップサンプルするかどうかです。 | `After applying other prompt processing` |
+| **Variety level** | このパラメーターは `Generation config` のプリセットです。アップサンプルされるタグの多様度を指定できます。 | `varied` |
+| **Generation config** | タグの生成に利用される LLM のパラメーターです。言語モデルの生成パラメーターに詳しくない場合は触らず、 `Variety level` を使うことをおすすめします。 ||
 
 ## ショーケース
 
@@ -96,6 +104,47 @@ nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit,
 - Seed: `-1`
 - When to perform the process: `Before applying styles`
 
+### 多様性レベル
+
+(シードは同じではないです。)
+
+<table>
+    <tr>
+        <td width="10%">入力プロンプト</td>
+        <td width="18%"><b>Very unvaried</b></td>
+        <td width="18%"><b>Unvaried</b></td>
+        <td width="18%"><b>Normal</b></td>
+        <td width="18%"><b>Varied</b></td>
+        <td width="18%"><b>Very varied</b></td>
+    </tr>
+    <tr>
+        <td>1girl, solo, from side</td>
+        <td><img src="./images/variation-very_unvaried-1.jpg" alt="Variation sample image 1; very unvaried" /></td>
+        <td><img src="./images/variation-unvaried-1.jpg" alt="Variation sample image 1; unvaried" /></td>
+        <td><img src="./images/variation-normal-1.jpg" alt="Variation sample image 1; normal" /></td>
+        <td><img src="./images/variation-varied-1.jpg" alt="Variation sample image 1; varied" /></td>
+        <td><img src="./images/variation-very_varied-1.jpg" alt="Variation sample image 1; very varied" /></td>
+    </tr>
+    <tr>
+        <td>1girl, frieren, sousou no frieren,</td>
+        <td><img src="./images/variation-very_unvaried-2.jpg" alt="Variation sample image 2; very unvaried" /></td>
+        <td><img src="./images/variation-unvaried-2.jpg" alt="Variation sample image 2; unvaried" /></td>
+        <td><img src="./images/variation-normal-2.jpg" alt="Variation sample image 2; normal" /></td>
+        <td><img src="./images/variation-varied-2.jpg" alt="Variation sample image 2; varied" /></td>
+        <td><img src="./images/variation-very_varied-2.jpg" alt="Variation sample image 2; very varied" /></td>
+    </tr>
+    <tr>
+        <td>no humans, scenery</td>
+        <td><img src="./images/variation-very_unvaried-3.jpg" alt="Variation sample image 3; very unvaried" /></td>
+        <td><img src="./images/variation-unvaried-3.jpg" alt="Variation sample image 3; unvaried" /></td>
+        <td><img src="./images/variation-normal-3.jpg" alt="Variation sample image 3; normal" /></td>
+        <td><img src="./images/variation-varied-3.jpg" alt="Variation sample image 3; varied" /></td>
+        <td><img src="./images/variation-very_varied-3.jpg" alt="Variation sample image 3; very varied" /></td>
+    </tr>
+</table>
+
+`Very unvaried`, `Unvaried` は多様性が低いことを意味しますが、同時に入力プロンプトに忠実であり、比較的無難なタグを生成します。また、`Very varied`, `Varied` はより多様なタグが生成されますが、入力プロンプトに従わなかったり不自然な生成になったりしやすくなります。
+
 ## モデルへのアクセス
 
 この拡張機能では次のモデルを使用しています:
@@ -107,6 +156,12 @@ nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit,
 🤗 Space 上にデモがあるのでインストール不要で試すことができます:
 
 デモ: https://huggingface.co/spaces/p1atdev/danbooru-tags-transformer
+
+## デフォルト値を変更するには？
+
+`[webui のルート]/ui-config.json` を開き、`customscript/dart_upsampler.py/` で始まるパラメーターを探して編集してください。
+
+もしデフォルト値が壊れていると感じたら、それらのパラメータを削除することでデフォルト値をリセットできます。
 
 ## 謝辞
 
