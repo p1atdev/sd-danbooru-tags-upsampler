@@ -8,6 +8,7 @@ English version is [here](./README.md).
 
 ## 更新履歴
 
+- 2024/2/29: v0.2.0。新機能: 生成オプション、多様性レベル、範囲禁止タグの実装。
 - 2024/2/25: v0.1.1。シード値の処理、括弧のエスケープ処理、軽微な不具合が修正されました。
 - 2024/2/23: 最初のバージョンである v0.1.0 をリリースしました
 
@@ -102,6 +103,47 @@ nsfw, lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit,
 - Ban tags: 指定なし
 - Seed: `-1`
 - When to perform the process: `Before applying styles`
+
+### 多様性レベル
+
+(シードは同じではないです。)
+
+<table>
+    <tr>
+        <td width="10%">入力プロンプト</td>
+        <td width="18%"><b>Very unvaried</b></td>
+        <td width="18%"><b>Unvaried</b></td>
+        <td width="18%"><b>Normal</b></td>
+        <td width="18%"><b>Varied</b></td>
+        <td width="18%"><b>Very varied</b></td>
+    </tr>
+    <tr>
+        <td>1girl, solo, from side</td>
+        <td><img src="./images/variation-very_unvaried-1.jpg" alt="Variation sample image 1; very unvaried" /></td>
+        <td><img src="./images/variation-unvaried-1.jpg" alt="Variation sample image 1; unvaried" /></td>
+        <td><img src="./images/variation-normal-1.jpg" alt="Variation sample image 1; normal" /></td>
+        <td><img src="./images/variation-varied-1.jpg" alt="Variation sample image 1; varied" /></td>
+        <td><img src="./images/variation-very_varied-1.jpg" alt="Variation sample image 1; very varied" /></td>
+    </tr>
+    <tr>
+        <td>1girl, frieren, sousou no frieren,</td>
+        <td><img src="./images/variation-very_unvaried-2.jpg" alt="Variation sample image 2; very unvaried" /></td>
+        <td><img src="./images/variation-unvaried-2.jpg" alt="Variation sample image 2; unvaried" /></td>
+        <td><img src="./images/variation-normal-2.jpg" alt="Variation sample image 2; normal" /></td>
+        <td><img src="./images/variation-varied-2.jpg" alt="Variation sample image 2; varied" /></td>
+        <td><img src="./images/variation-very_varied-2.jpg" alt="Variation sample image 2; very varied" /></td>
+    </tr>
+    <tr>
+        <td>no humans, scenery</td>
+        <td><img src="./images/variation-very_unvaried-3.jpg" alt="Variation sample image 3; very unvaried" /></td>
+        <td><img src="./images/variation-unvaried-3.jpg" alt="Variation sample image 3; unvaried" /></td>
+        <td><img src="./images/variation-normal-3.jpg" alt="Variation sample image 3; normal" /></td>
+        <td><img src="./images/variation-varied-3.jpg" alt="Variation sample image 3; varied" /></td>
+        <td><img src="./images/variation-very_varied-3.jpg" alt="Variation sample image 3; very varied" /></td>
+    </tr>
+</table>
+
+`Very unvaried`, `Unvaried` は多様性が低いことを意味しますが、同時に入力プロンプトに忠実であり、比較的無難なタグを生成します。また、`Very varied`, `Varied` はより多様なタグが生成されますが、入力プロンプトに従わなかったり不自然な生成になったりしやすくなります。
 
 ## モデルへのアクセス
 

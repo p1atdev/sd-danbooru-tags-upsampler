@@ -8,6 +8,7 @@ It's useful for people who don't want think about long prompt or want to see **d
 
 ## Upsates
 
+- 2024/2/29: v0.2.0 has been released. New features; generation options, variety level and range ban tags.
 - 2024/2/25: v0.1.1 has been released. Handling of seeds, escaping processing of brackets and many bugs are fixed.
 - 2024/2/23: First version v0.1.0 has been released.
 
@@ -106,6 +107,47 @@ Upsampling settings:
 - Ban tags: none
 - Seed: `-1`
 - When to perform the process: `Before applying styles`
+
+### Variation levels
+
+(The seeds are not the same.)
+
+<table>
+    <tr>
+        <td width="10%">Input prompt</td>
+        <td width="18%"><b>Very unvaried</b></td>
+        <td width="18%"><b>Unvaried</b></td>
+        <td width="18%"><b>Normal</b></td>
+        <td width="18%"><b>Varied</b></td>
+        <td width="18%"><b>Very varied</b></td>
+    </tr>
+    <tr>
+        <td>1girl, solo, from side</td>
+        <td><img src="./images/variation-very_unvaried-1.jpg" alt="Variation sample image 1; very unvaried" /></td>
+        <td><img src="./images/variation-unvaried-1.jpg" alt="Variation sample image 1; unvaried" /></td>
+        <td><img src="./images/variation-normal-1.jpg" alt="Variation sample image 1; normal" /></td>
+        <td><img src="./images/variation-varied-1.jpg" alt="Variation sample image 1; varied" /></td>
+        <td><img src="./images/variation-very_varied-1.jpg" alt="Variation sample image 1; very varied" /></td>
+    </tr>
+    <tr>
+        <td>1girl, frieren, sousou no frieren,</td>
+        <td><img src="./images/variation-very_unvaried-2.jpg" alt="Variation sample image 2; very unvaried" /></td>
+        <td><img src="./images/variation-unvaried-2.jpg" alt="Variation sample image 2; unvaried" /></td>
+        <td><img src="./images/variation-normal-2.jpg" alt="Variation sample image 2; normal" /></td>
+        <td><img src="./images/variation-varied-2.jpg" alt="Variation sample image 2; varied" /></td>
+        <td><img src="./images/variation-very_varied-2.jpg" alt="Variation sample image 2; very varied" /></td>
+    </tr>
+    <tr>
+        <td>no humans, scenery</td>
+        <td><img src="./images/variation-very_unvaried-3.jpg" alt="Variation sample image 3; very unvaried" /></td>
+        <td><img src="./images/variation-unvaried-3.jpg" alt="Variation sample image 3; unvaried" /></td>
+        <td><img src="./images/variation-normal-3.jpg" alt="Variation sample image 3; normal" /></td>
+        <td><img src="./images/variation-varied-3.jpg" alt="Variation sample image 3; varied" /></td>
+        <td><img src="./images/variation-very_varied-3.jpg" alt="Variation sample image 3; very varied" /></td>
+    </tr>
+</table>
+
+`Very unvaried` and `Unvaried` mean less variety, but at the same time, faithful to the input prompt and generate relatively acceptable tags. Also, `Very varied` and `Varied` mean more variety, but tend to ignore the input prompt and often generate weird tags. 
 
 ## Access to the model weights
 
