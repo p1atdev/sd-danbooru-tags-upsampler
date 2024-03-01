@@ -293,6 +293,9 @@ class DartUpsampleScript(scripts.Script):
 
         if process_timing != PROCESSING_TIMING["AFTER"]:
             return
+        
+        if getattr(p, 'txt2img_upscale', False):
+            return
 
         analyzing_results = [self.analyzer.analyze(prompt) for prompt in p.all_prompts]
         logger.debug(f"Analyzed: {analyzing_results}")
@@ -376,6 +379,9 @@ class DartUpsampleScript(scripts.Script):
             return
 
         if process_timing != PROCESSING_TIMING["BEFORE"]:
+            return
+        
+        if getattr(p, 'txt2img_upscale', False):
             return
 
         analyzing_result = self.analyzer.analyze(p.prompt)
