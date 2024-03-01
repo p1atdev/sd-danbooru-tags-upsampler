@@ -187,7 +187,7 @@ class DartAnalyzer:
             self.vocab += escape_webui_special_symbols(self.vocab)
 
     def split_tags(self, image_prompt: str) -> list[str]:
-        return [tag.strip() for tag in image_prompt.split(",") if tag.strip() != ""]
+        return [tag.strip() for tag in image_prompt.split(",") for tag in tag.split("\n") if tag.strip() != ""]
 
     def extract_tags(self, input_tags: list[str], extract_tag_list: list[str]):
         matched: list[str] = []
