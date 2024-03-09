@@ -2,6 +2,8 @@ import logging
 from pathlib import Path
 from dataclasses import dataclass
 
+from modules.extra_networks import parse_prompt
+from modules.prompt_parser import parse_prompt_attention
 from modules.shared import opts
 
 from dart.settings import parse_options
@@ -211,7 +213,7 @@ class DartAnalyzer:
         return ", ".join(tags)
 
     def analyze(self, image_prompt: str) -> ImagePromptAnalyzingResult:
-        input_tags = self.split_tags(image_prompt)
+        input_tags = self.split_tags(",".join([x[0] for x in parse_prompt_attention(parse_prompt(image_prompt)[0])]))
 
         input_tags = list(set(input_tags))  # unique
 
