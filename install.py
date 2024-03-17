@@ -13,7 +13,10 @@ if not launch.is_installed("onnxruntime"):
 
 
 if launch.is_installed("tensorflow"):
-    show_result = launch.run("pip show tensorflow")
+    show_result = launch.run(
+        f'"{launch.python}" -m pip show tensorflow',
+        desc="Downgrading tensorflow to 2.15.1 to avoid the error with transformers==4.30.2",
+    )
     if "2.15.1" not in show_result:
         launch.run_pip(
             "install -U tensorflow==2.15.1",
